@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psycho-Cinematics | MBTI Media Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Noto+Sans+SC:wght@900&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">    <style>
+     :root {
+            --color-text: #f4eadd;
+            --color-line: rgba(244, 234, 221, 0.2);
+            
+            /* 【背景英文专属】：保持原版的粗犷和优雅 */
+            --font-brutal: 'Anton', sans-serif; 
+            --font-script: 'Cormorant Garamond', serif; 
+            
+            /* 【电影列表专属】：中文适配 */
+            --font-movie-title: 'Noto Sans SC', sans-serif; /* 思源黑体 */
+            --font-movie-meta: 'LXGW WenKai Lite', serif;   /* 霞鹜文楷 */
+            
+            --font-ui: 'Space Grotesk', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden; background-color: #111;
+            color: var(--color-text); font-family: var(--font-ui);
+            -webkit-font-smoothing: antialiased;
+        }
+        /* 1. 全局普通状态的星星鼠标 (明黄色) */
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden; background-color: #111;
+            color: var(--color-text); font-family: var(--font-ui);
+            -webkit-font-smoothing: antialiased;
+            /* 👇新增这行：设置默认光标为黄色星星 */
+           
+
+        /* 2. 悬浮在按钮/电影列表上的星星鼠标 (加了 !important 确保覆盖原生 pointer) */
+        
+        .hidden { display: none !important; }
+        
+        #glcanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+        
+        /* 核心布局改动：去除生硬的边界，增加全局内边距 */
+        main {
+            position: relative; z-index: 10; width: 100%; height: 100%;
+            display: grid; grid-template-columns: 320px 1fr; gap: 6rem;
+            padding: 4rem 6rem; pointer-events: none;
+            max-width: 1800px; margin: 0 auto;
+        }
+
+        /* 移除背景色和右边框，让组件悬浮 */
+        .system-panel {
+            display: flex; flex-direction: column;
+            pointer-events: auto; overflow-y: auto;
+            padding-right: 1rem;
+        }
+        .system-panel::-webkit-scrollbar { display: none; }
+
+        .header-meta {
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; line-height: 1.8;
+            color: rgba(244, 234, 221, 0.6); margin-bottom: 4rem;
+        }
+        .header-meta span { display: block; color: var(--color-text); }
+        .header-meta .status-text { color: #4ade80; }
+
+        .back-btn {
+            background: transparent; border: 1px solid var(--color-line); color: var(--color-text);
+            font-family: var(--font-ui); padding: 0.5rem 1rem; font-size: 0.75rem;
+            text-transform: uppercase; cursor: pointer; margin-bottom: 2rem;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; width: fit-content;
+        }
+        .back-btn:hover { background: var(--color-text); color: #000; }
+
+        .panel-label {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+            color: rgba(244, 234, 221, 0.6); margin-bottom: 1rem;
+        }
+
+        /* 网格样式调整，贴合参考图质感 */
+        .format-toggle { display: flex; gap: 1px; background-color: var(--color-line); border: 1px solid var(--color-line); margin-bottom: 3rem; }
+        .format-btn {
+            flex: 1; background: rgba(0,0,0,0.4); border: none; color: rgba(244, 234, 221, 0.5);
+            font-family: var(--font-ui); font-size: 0.75rem; padding: 1rem 0;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.1em;
+        }
+        .format-btn.active { background: var(--color-text); color: #000; font-weight: 500; }
+
+        .selection-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background-color: var(--color-line); border: 1px solid var(--color-line); margin-bottom: 2rem; }
+        .genre-grid { grid-template-columns: repeat(2, 1fr); }
+
+        .grid-btn {
+            background: rgba(0,0,0,0.3); border: none; color: rgba(244, 234, 221, 0.8);
+            /* 重点修改：改为微软雅黑并加粗 */
+            font-family: 'Microsoft YaHei', sans-serif; 
+            font-weight: bold;
+            font-size: 0.85rem; padding: 1.5rem 0.5rem;
+            cursor: pointer; transition: all 0.2s ease; position: relative;
+        }
+        
+        /* 重点修改：悬浮(hover)和选中(active)时的背景色改为截图中的米白色，文字改为深色 */
+        .grid-btn:hover, .grid-btn.active { 
+            background-color: #EFE4D3; /* 截图中的米白色 */
+            color: #1A202C; /* 深色文字，保证在浅色背景上的对比度 */
+        }
+        
+        .grid-btn.active::after {
+            content: ''; position: absolute; top: 6px; right: 6px; width: 4px; height: 4px;
+            background: #1A202C; /* 提示小圆点也改成深色 */
+            border-radius: 50%;
+        }
+
+        /* 右侧展示区：内容居中对齐，留出呼吸感 */
+        .display-panel {
+            display: flex; flex-direction: column; justify-content: center;
+            position: relative; pointer-events: auto; overflow-y: auto;
+            padding-bottom: 10vh; /* 视觉重心上移 */
+        }
+        .display-panel::-webkit-scrollbar { display: none; }
+
+      .typology-wrapper { 
+            position: relative; 
+            margin-bottom: 5rem; 
+            /* 新增：给整个文字模块加一个向右的内边距，把它推出来 */
+            padding-left: 2rem; 
+        }
+        
+        .type-code {
+            font-family: var(--font-brutal); 
+            font-size: clamp(5rem, 9vw, 11rem); 
+            line-height: 0.8; text-transform: uppercase; color: var(--color-text);
+            mix-blend-mode: overlay; opacity: 0.7; 
+            /* 修复：删掉之前的负边距，改为 0 或者一点点正边距 */
+            margin-left: 0; 
+        }
+        
+        .type-name {
+            font-family: var(--font-script); 
+            font-size: clamp(3rem, 5vw, 6rem); 
+            line-height: 0.8; position: absolute; top: 50%; 
+            /* 修复：将原本的 left: 8% 调大一点，让手写体跟着背景字母一起向右对齐 */
+            left: 12%; 
+            transform: translateY(-30%);
+            white-space: nowrap; color: var(--color-text); text-shadow: 0 4px 30px rgba(0,0,0,0.3); pointer-events: none;
+        }
+
+/* 电影列表排版升级 - 调整了字体和间距 */
+        .recommendations { max-width: 800px; margin-left: 8%; }
+        .movie-list { list-style: none; display: flex; flex-direction: column; gap: 1.5rem; } /* 缩小了上下间距 */
+        .movie-item {
+            display: flex; align-items: baseline; gap: 1rem; 
+            cursor: pointer; transition: all 0.3s; opacity: 0.9;
+        }
+        .movie-item:hover { transform: translateX(10px); opacity: 1; }
+        .movie-title {
+            /* 👈 这里改成了调用专用的中文粗体变量 */
+            font-family: var(--font-movie-title); 
+            font-size: 2.2rem; 
+            font-weight: 900; 
+            text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.2; 
+            padding-bottom: 0.1em;
+            flex-shrink: 0; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .movie-meta { 
+            /* 👈 这里改成了调用专用的中文文楷变量 */
+            font-family: var(--font-movie-meta); 
+            font-size: 1.1rem; 
+            color: rgba(244, 234, 221, 0.7); 
+        }      
+        #loading { font-family: var(--font-brutal); font-size: 2.5rem; color: rgba(244, 234, 221, 0.5); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #111; border: 1px solid var(--color-line); width: 90%; max-width: 800px; display: flex; flex-direction: column; position: relative; }
+        .modal-close {
+            position: absolute; top: 1rem; right: 1rem; background: transparent; border: 1px solid var(--color-line);
+            color: var(--color-text); width: 30px; height: 30px; cursor: pointer; z-index: 10; font-family: var(--font-ui);
+        }
+        .modal-close:hover { background: var(--color-text); color: #000; }
+        .modal-backdrop-img { width: 100%; height: 250px; object-fit: cover; opacity: 0.4; filter: grayscale(50%); border-bottom: 1px solid var(--color-line); }
+        .modal-body { padding: 2rem; display: flex; gap: 2rem; margin-top: -80px; position: relative; }
+        .modal-poster { width: 160px; height: 240px; object-fit: cover; border: 1px solid var(--color-line); background: #222; }
+        .modal-info { flex: 1; }
+        .modal-title { font-family: var(--font-brutal); font-size: 2.5rem; line-height: 1; margin-bottom: 0.5rem; text-transform: uppercase; }
+        .modal-tags { font-family: var(--font-ui); font-size: 0.8rem; color: #aaa; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .modal-overview { font-family: var(--font-ui); font-size: 0.95rem; line-height: 1.6; color: #ddd; margin-bottom: 2rem; }
+        .douban-btn {
+            display: inline-block; padding: 0.8rem 1.5rem; border: 1px solid var(--color-text); color: var(--color-text);
+            text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s;
+        }
+        .douban-btn:hover { background: var(--color-text); color: #000; }
+    </style>
+</head>
+<body>
+    <canvas id="glcanvas"></canvas>
+
+    <main>
+        <aside class="system-panel">
+            <div class="header-meta">
+                Seq. 01 — Psycho-Cinematics<br><br>
+                Aesthetic Index: <span>Dynamic Tracking</span>
+                System Status: <span class="status-text" id="sys-status">AWAITING INPUT</span>
+            </div>
+
+            <div class="panel-label">Media Data Source</div>
+            <div class="format-toggle">
+                <button id="fmt-movie" class="format-btn active" onclick="setFormat('movie')">Cinema</button>
+                <button id="fmt-tv" class="format-btn" onclick="setFormat('tv')">Series</button>
+            </div>
+
+            <button id="back-btn" class="back-btn hidden" onclick="goBack()">
+                ← Reboot Sequence
+            </button>
+
+            <div id="step-1">
+                <div class="panel-label">Input Identity Matrix</div>
+                <div class="selection-grid" id="mbti-container"></div>
+            </div>
+
+            <div id="step-2" class="hidden">
+                <div class="panel-label">Select Resonance Frequency</div>
+                <div class="selection-grid genre-grid">
+                    <button class="grid-btn" onclick="selectGenre(28, 10759, 'Action')">Action / Kinetic</button>
+                    <button class="grid-btn" onclick="selectGenre(878, 10765, 'Sci-Fi')">Sci-Fi / Neural</button>
+                    <button class="grid-btn" onclick="selectGenre(35, 35, 'Comedy')">Comedy / Lucid</button>
+                    <button class="grid-btn" onclick="selectGenre(9648, 9648, 'Mystery')">Mystery / Cryptic</button>
+                    <button class="grid-btn" onclick="selectGenre(10749, 18, 'Romance')">Romance / Pulse</button>
+                    <button class="grid-btn" onclick="selectGenre(16, 16, 'Animation')">Animation / Astral</button>
+                    <button class="grid-btn" onclick="selectGenre(18, 18, 'Drama')">Drama / Depth</button>
+                    <button class="grid-btn" onclick="selectGenre(27, 9648, 'Horror')">Horror / Void</button>
+                </div>
+            </div>
+        </aside>
+
+        <section class="display-panel">
+            <div class="typology-wrapper">
+                <div class="type-code" id="display-code">SYS.RDY</div>
+                <div class="type-name" id="display-name">Awaiting Matrix</div>
+            </div>
+
+            <div class="recommendations">
+                <div class="panel-label hidden" id="result-label">Curated Resonance</div>
+                <div id="loading" class="hidden">SCANNING DATABANKS...</div>
+                <ul class="movie-list" id="movie-list"></ul>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="movie-modal" onclick="closeModal(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal(event, true)">✕</button>
+            <img class="modal-backdrop-img" id="modal-backdrop" src="">
+            <div class="modal-body">
+                <img class="modal-poster" id="modal-poster" src="">
+                <div class="modal-info">
+                    <div class="modal-title" id="modal-title">Title</div>
+                    <div class="modal-tags">YR: <span id="modal-date"></span> | TMDB: <span id="modal-rating"></span></div>
+                    <div class="modal-overview" id="modal-overview">Overview...</div>
+                    <a id="douban-link" href="#" target="_blank" class="douban-btn">Access Douban Records</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API 逻辑和 WebGL 渲染代码完全保留，未做删改
+        const API_KEY = '51963a5387e1f30b4dd935c9ca6967cb';
+        const BASE_IMG_URL = 'https://image.tmdb.org/t/p/';
+        
+        let userState = { mediaFormat: 'movie', mbti: '', genreMovieId: '', genreTvId: '', genreName: '' };
+        let currentResults = [];
+
+        const mbtiData = {
+            'INTJ': { name: 'The Architect', k: '10051|4565|4379', colorTop: [1.0, 0.36, 0.0], colorBot: [0.16, 0.16, 0.18] },
+            'INTP': { name: 'The Logician', k: '1852|14760', colorTop: [0.1, 0.8, 0.6], colorBot: [0.05, 0.1, 0.2] },
+            'ENTJ': { name: 'The Commander', k: '11251|3167', colorTop: [0.8, 0.1, 0.1], colorBot: [0.1, 0.05, 0.05] },
+            'ENTP': { name: 'The Debater', k: '170362|10051', colorTop: [0.9, 0.9, 0.1], colorBot: [0.3, 0.2, 0.1] },
+            'INFJ': { name: 'The Advocate', k: '9840|258209', colorTop: [0.6, 0.4, 0.8], colorBot: [0.1, 0.1, 0.15] },
+            'INFP': { name: 'The Mediator', k: '9715|3205', colorTop: [1.0, 0.54, 0.4], colorBot: [0.62, 0.64, 0.66] },
+            'ENFJ': { name: 'The Protagonist', k: '11084|156346', colorTop: [0.2, 0.6, 1.0], colorBot: [0.0, 0.2, 0.4] },
+            'ENFP': { name: 'The Campaigner', k: '11800|155030', colorTop: [1.0, 0.0, 0.5], colorBot: [0.2, 0.0, 0.3] },
+            'ISTJ': { name: 'The Logistician', k: '9663|10466', colorTop: [0.5, 0.5, 0.5], colorBot: [0.1, 0.1, 0.1] },
+            'ISFJ': { name: 'The Defender', k: '10556|158535', colorTop: [0.8, 0.7, 0.6], colorBot: [0.3, 0.25, 0.2] },
+            'ESTJ': { name: 'The Executive', k: '10466|159551', colorTop: [0.3, 0.4, 0.5], colorBot: [0.05, 0.1, 0.15] },
+            'ESFJ': { name: 'The Consul', k: '9799|11130', colorTop: [0.9, 0.6, 0.3], colorBot: [0.4, 0.1, 0.1] },
+            'ISTP': { name: 'The Virtuoso', k: '155030|10321', colorTop: [0.7, 0.8, 0.1], colorBot: [0.2, 0.2, 0.2] },
+            'ISFP': { name: 'The Adventurer', k: '11161|1852', colorTop: [0.4, 0.8, 0.9], colorBot: [0.1, 0.2, 0.3] },
+            'ESTP': { name: 'The Entrepreneur', k: '10321|642', colorTop: [1.0, 0.4, 0.0], colorBot: [0.2, 0.1, 0.0] },
+            'ESFP': { name: 'The Entertainer', k: '10727|170418', colorTop: [1.0, 0.8, 0.0], colorBot: [0.4, 0.0, 0.2] }
+        };
+
+        const gridContainer = document.getElementById('mbti-container');
+        Object.keys(mbtiData).forEach(type => {
+            const btn = document.createElement('button');
+            btn.className = 'grid-btn'; btn.textContent = type;
+            btn.onclick = () => selectMBTI(type);
+            gridContainer.appendChild(btn);
+        });
+
+        const displayCode = document.getElementById('display-code');
+        const displayName = document.getElementById('display-name');
+        const sysStatus = document.getElementById('sys-status');
+        const backBtn = document.getElementById('back-btn');
+        const resultLabel = document.getElementById('result-label');
+        const movieList = document.getElementById('movie-list');
+        const loading = document.getElementById('loading');
+
+        function setFormat(format) {
+            userState.mediaFormat = format;
+            document.getElementById('fmt-movie').classList.toggle('active', format === 'movie');
+            document.getElementById('fmt-tv').classList.toggle('active', format === 'tv');
+            if (!document.getElementById('step-2').classList.contains('hidden') && userState.genreName) {
+                selectGenre(userState.genreMovieId, userState.genreTvId, userState.genreName);
+            }
+        }
+
+        // 1. 锁定人格：切换面板，并控制按钮高亮
+        function selectMBTI(type) {
+            userState.mbti = type;
+            const data = mbtiData[type];
+            targetColorTop = data.colorTop; targetColorBot = data.colorBot;
+            displayCode.textContent = type; displayName.textContent = data.name;
+            sysStatus.textContent = "AWAITING FREQUENCY";
+            
+            // 切换面板显示状态
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.remove('hidden');
+            backBtn.classList.remove('hidden');
+            resultLabel.classList.add('hidden');
+            movieList.innerHTML = '';
+
+            // 清理上一轮的残留高亮，并点亮当前点击的 MBTI 按钮
+            document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
+            if (window.event && window.event.currentTarget) {
+                window.event.currentTarget.classList.add('active');
+            }
+        }
+
+        // 2. 锁定类型：触发电影检索，并控制按钮高亮
+        function selectGenre(movieId, tvId, genreName) {
+            userState.genreMovieId = movieId;
+            userState.genreTvId = tvId;
+            userState.genreName = genreName;
+            sysStatus.textContent = `TRACKING: ${userState.mediaFormat.toUpperCase()} // ${genreName.toUpperCase()}`;
+            
+            // 只在第二步的网格中切换高亮，避免影响其他地方
+            document.querySelectorAll('.genre-grid .grid-btn').forEach(b => b.classList.remove('active'));
+            if (window.event && window.event.currentTarget) {
+                window.event.currentTarget.classList.add('active');
+            }
+
+            movieList.innerHTML = '';
+            resultLabel.classList.add('hidden');
+            loading.classList.remove('hidden');
+            fetchAndRenderMedia();
+        }
+
+       function goBack() {
+            document.getElementById('step-2').classList.add('hidden');
+            document.getElementById('step-1').classList.remove('hidden');
+            backBtn.classList.add('hidden');
+            
+            displayCode.textContent = "SYS.RDY"; 
+            displayName.textContent = "Awaiting Matrix";
+            sysStatus.textContent = "AWAITING INPUT";
+            resultLabel.classList.add('hidden'); 
+            movieList.innerHTML = '';
+            userState.genreName = '';
+            
+            // 👇 替换这里，确保返回首页时恢复你的完美灰黑渐变
+            targetColorTop = [0.3, 0.3, 0.3]; 
+            targetColorBot = [0.01, 0.01, 0.01];
+            
+            document.querySelectorAll('.grid-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+        }
+        async function fetchAndRenderMedia() {
+            const keywords = mbtiData[userState.mbti].k;
+            const endpoint = userState.mediaFormat; 
+            const activeGenreId = endpoint === 'tv' ? userState.genreTvId : userState.genreMovieId;
+            
+            const url = `https://api.themoviedb.org/3/discover/${endpoint}?api_key=${API_KEY}&with_genres=${activeGenreId}&with_keywords=${keywords}&language=zh-CN&sort_by=vote_average.desc&vote_count.gte=100&page=1`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                let results = data.results;
+
+                for (let i = results.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [results[i], results[j]] = [results[j], results[i]];
+                }
+                
+                currentResults = results.slice(0, 5);
+                loading.classList.add('hidden');
+                
+                if(currentResults.length === 0) {
+                    loading.innerHTML = "ERR: NO DATA FOUND IN MATRIX";
+                    loading.classList.remove('hidden');
+                    return;
+                }
+
+                resultLabel.classList.remove('hidden');
+
+                currentResults.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'movie-item';
+                    li.onclick = () => openModal(index);
+                    
+                    const title = item.title || item.name;
+                    const dateRaw = item.release_date || item.first_air_date;
+                    const year = dateRaw ? dateRaw.substring(0,4) : 'UNKN';
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+                    
+                    li.innerHTML = `
+                        <span class="movie-title">${title}</span>
+                        <span class="movie-meta">v.${rating} // ${year}</span>
+                    `;
+                    movieList.appendChild(li);
+                });
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                loading.innerHTML = "ERR: CONNECTION SEVERED";
+            }
+        }
+
+        function openModal(index) {
+            const item = currentResults[index];
+            const title = item.title || item.name;
+            const dateRaw = item.release_date || item.first_air_date;
+            
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-date').innerText = dateRaw ? dateRaw.substring(0,4) : 'UNKNOWN';
+            document.getElementById('modal-rating').innerText = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+            document.getElementById('modal-overview').innerText = item.overview || 'Data corrupted. No description available.';
+            
+            document.getElementById('modal-poster').src = item.poster_path ? `${BASE_IMG_URL}w500${item.poster_path}` : 'https://via.placeholder.com/500x750/111/fff?text=NO+IMAGE';
+            document.getElementById('modal-backdrop').src = item.backdrop_path ? `${BASE_IMG_URL}w1280${item.backdrop_path}` : '';
+
+            const doubanSearchUrl = `https://search.douban.com/movie/subject_search?search_text=${encodeURIComponent(title)}`;
+            document.getElementById('douban-link').href = doubanSearchUrl;
+
+            document.getElementById('movie-modal').classList.add('active');
+        }
+
+        function closeModal(e, force = false) {
+            if (force || e.target.id === 'movie-modal') {
+                document.getElementById('movie-modal').classList.remove('active');
+            }
+        }
+
+        const canvas = document.getElementById('glcanvas'); const gl = canvas.getContext('webgl');
+        const vsSource = `attribute vec4 aVertexPosition; void main() { gl_Position = aVertexPosition; }`;
+        const fsSource = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
+            uniform vec3 u_colorTop; uniform vec3 u_colorBot;
+            float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+            float noise(in vec2 st) {
+                vec2 i = floor(st); vec2 f = fract(st);
+                float a = random(i); float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0)); float d = random(i + vec2(1.0, 1.0));
+                vec2 u = f*f*(3.0-2.0*f); return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+            void main() {
+                vec2 st = gl_FragCoord.xy / u_resolution.xy; float mixVal = pow(st.y, 1.2);
+                vec3 baseColor = mix(u_colorBot, u_colorTop, mixVal); vec2 noiseScale = st * (u_resolution.y * 0.5);
+                float n = random(noiseScale + u_time * 0.001); float organic = noise(st * 3.0);
+                float threshold = mix(0.1, 0.9, mixVal) + (organic * 0.2 - 0.1); float grain = step(threshold, n);
+                vec3 darkGrainColor = u_colorBot * 0.5; vec3 lightGrainColor = u_colorTop * 1.2; vec3 finalColor;
+                if (grain > 0.5) finalColor = baseColor; else finalColor = mix(darkGrainColor, lightGrainColor, st.y);
+                finalColor -= random(st + u_time) * 0.05; gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+        function loadShader(gl, type, source) { const shader = gl.createShader(type); gl.shaderSource(shader, source); gl.compileShader(shader); return shader; }
+        const shaderProgram = gl.createProgram(); gl.attachShader(shaderProgram, loadShader(gl, gl.VERTEX_SHADER, vsSource)); gl.attachShader(shaderProgram, loadShader(gl, gl.FRAGMENT_SHADER, fsSource)); gl.linkProgram(shaderProgram);
+        const programInfo = { program: shaderProgram, attribLocations: { vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition') }, uniformLocations: { resolution: gl.getUniformLocation(shaderProgram, 'u_resolution'), time: gl.getUniformLocation(shaderProgram, 'u_time'), colorTop: gl.getUniformLocation(shaderProgram, 'u_colorTop'), colorBot: gl.getUniformLocation(shaderProgram, 'u_colorBot') } };
+        const positionBuffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1,1,-1,1,1,-1,-1,-1]), gl.STATIC_DRAW);
+// 替换为你指定的暗银灰到纯黑的渐变
+        let currentColorTop = [0.3, 0.3, 0.3]; 
+        let currentColorBot = [0.01, 0.01, 0.01]; 
+        let targetColorTop = [0.3, 0.3, 0.3]; 
+        let targetColorBot = [0.01, 0.01, 0.01];
+                function lerp(a, b, t) { return (1-t)*a + t*b; }
+        function render(now) {
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+            gl.viewport(0, 0, w, h); gl.useProgram(programInfo.program);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+            for (let i = 0; i < 3; i++) { currentColorTop[i] = lerp(currentColorTop[i], targetColorTop[i], 0.05); currentColorBot[i] = lerp(currentColorBot[i], targetColorBot[i], 0.05); }
+            gl.uniform2f(programInfo.uniformLocations.resolution, w, h); gl.uniform1f(programInfo.uniformLocations.time, now * 0.001); gl.uniform3fv(programInfo.uniformLocations.colorTop, currentColorTop); gl.uniform3fv(programInfo.uniformLocations.colorBot, currentColorBot);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
