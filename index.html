@@ -199,6 +199,87 @@
             text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s;
         }
         .douban-btn:hover { background: var(--color-text); color: #000; }
+           /* --- 移动端适配代码开始 --- */
+@media screen and (max-width: 768px) {
+    /* 1. 允许滚动，去掉 hidden */
+    body, html {
+        overflow-y: auto;
+    }
+
+    /* 2. 布局从双列改为单列，缩小间距 */
+    main {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        padding: 2rem 1.5rem;
+        height: auto;
+        overflow-y: visible;
+    }
+
+    /* 3. 系统面板不再固定宽度 */
+    .system-panel {
+        padding-right: 0;
+        width: 100%;
+    }
+
+    .header-meta {
+        margin-bottom: 2rem;
+    }
+
+    /* 4. 调整 MBTI 展示区的文字大小，防止溢出 */
+    .typology-wrapper {
+        margin-bottom: 3rem;
+        padding-left: 0;
+        text-align: center;
+    }
+
+    .type-code {
+        font-size: clamp(4rem, 15vw, 6rem);
+        opacity: 0.5;
+    }
+
+    .type-name {
+        font-size: clamp(2rem, 8vw, 3rem);
+        left: 50%;
+        transform: translate(-50%, -30%);
+        width: 100%;
+        text-align: center;
+    }
+
+    /* 5. 电影列表调整 */
+    .recommendations {
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    .movie-title {
+        font-size: 1.4rem; /* 手机端标题小一点更精致 */
+    }
+
+    .movie-item {
+        flex-direction: column; /* 手机端元数据换行展示 */
+        gap: 0.2rem;
+    }
+
+    /* 6. 弹窗适配 */
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .modal-body {
+        flex-direction: column;
+        margin-top: -40px;
+        padding: 1.5rem;
+        align-items: center;
+        text-align: center;
+    }
+
+    .modal-poster {
+        width: 120px;
+        height: 180px;
+    }
+}
+/* --- 移动端适配代码结束 --- */
     </style>
 </head>
 <body>
