@@ -66,6 +66,19 @@
         .header-meta span { display: block; color: var(--color-text); }
         .header-meta .status-text { color: #4ade80; }
 
+        .campus-entry {
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            margin: -2rem 0 2.5rem; padding: 1rem 1.1rem;
+            border: 1px solid rgba(74, 222, 128, 0.55); color: #f4eadd;
+            text-decoration: none; background: rgba(74, 222, 128, 0.08);
+            font-family: 'Microsoft YaHei', sans-serif; transition: all 0.25s ease;
+        }
+        .campus-entry strong { display: block; font-size: 0.95rem; letter-spacing: 0.08em; }
+        .campus-entry small { display: block; margin-top: 0.35rem; color: rgba(244, 234, 221, 0.55); font-size: 0.65rem; letter-spacing: 0.08em; }
+        .campus-entry .campus-arrow { color: #4ade80; font-size: 1.4rem; }
+        .campus-entry:hover { background: #4ade80; color: #111; transform: translateX(4px); }
+        .campus-entry:hover small, .campus-entry:hover .campus-arrow { color: #111; }
+
         .back-btn {
             background: transparent; border: 1px solid var(--color-line); color: var(--color-text);
             font-family: var(--font-ui); padding: 0.5rem 1rem; font-size: 0.75rem;
@@ -292,6 +305,11 @@
                 Aesthetic Index: <span>Dynamic Tracking</span>
                 System Status: <span class="status-text" id="sys-status">AWAITING INPUT</span>
             </div>
+
+            <a class="campus-entry" href="/shunlu/" aria-label="进入校园跑腿互助平台">
+                <span><strong>校园跑腿</strong><small>CAMPUS MUTUAL HELP</small></span>
+                <span class="campus-arrow">↗</span>
+            </a>
 
             <div class="panel-label">Media Data Source</div>
             <div class="format-toggle">
